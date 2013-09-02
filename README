@@ -15,7 +15,7 @@ Erlang PostgreSQL Database Client
     + {ssl_opts, List}       see ssl application docs in OTP
     + {timeout,  Integer}    milliseconds, defaults to 5000
     + {async,    Pid}        see Asynchronous Messages section
-
+    + {json_lib, {{encode, fun mochijson2:encode/1},{decode, fun mochijson2:decode/1}}} see JSON Support
   {ok, C} = pgsql:connect("localhost", "username", [{database, "test_db"}]).
   ok = pgsql:close(C).
 
@@ -142,3 +142,10 @@ Erlang PostgreSQL Database Client
       Connection  - connection the notice occured on
       Error       - an #error{} record, see pgsql.hrl
 
+* JSON Support
+
+  While PostgreSQL has support for JSON types, there are many different Erlang 
+  libraries to choose from that encode/decode this format. One may supply two
+  functions as options to the connection for both encoding and decoding JSON.
+  The presumption is that the encode function produces a binary; you may have
+  the decode function produce whatever structure you wish.

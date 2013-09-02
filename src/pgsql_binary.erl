@@ -1,7 +1,7 @@
 %%% Copyright (C) 2008 - Will Glozer.  All rights reserved.
 
 -module(pgsql_binary).
-
+-include("pgsql.hrl").
 -export([encode/2, decode/2, supports/1]).
 
 -define(int32, 1/big-signed-unit:32).
@@ -37,6 +37,10 @@ encode(chararray, L) when is_list(L)        -> encode_array(bpchar, L);
 encode(textarray, L) when is_list(L)        -> encode_array(text, L);
 encode(uuidarray, L) when is_list(L)        -> encode_array(uuid, L);
 encode(varchararray, L) when is_list(L)     -> encode_array(varchar, L);
+encode(json, Json) ->
+  {ok, JsonLib} = application:get_env(epgsql, json_lib),
+  EFun = JsonLib#json_lib.encode,
+  encode_array(text, binary_to_list(list_to_binary(EFun(Json))));
 encode(Type, L) when is_list(L)             -> encode(Type, list_to_binary(L));
 encode(_Type, _Value)                       -> {error, unsupported}.
 
@@ -66,6 +70,10 @@ decode(chararray, B)                        -> decode_array(B);
 decode(textarray, B)                        -> decode_array(B);
 decode(uuidarray, B)                        -> decode_array(B);
 decode(varchararray, B)                     -> decode_array(B);
+decode(json, Json) ->
+  {ok, JsonLib} = application:get_env(epgsql, json_lib),
+  DeFun = JsonLib#json_lib.decode,
+  decode_array(DeFun(Json));
 decode(_Other, Bin)                         -> Bin.
 
 encode_array(Type, A) ->

@@ -122,6 +122,12 @@ code_change(_Old_Vsn, State_Name, State, _Extra) ->
 startup({connect, Host, Username, Password, Opts}, From, State) ->
     Timeout = proplists:get_value(timeout, Opts, 5000),
     Async   = proplists:get_value(async, Opts, undefined),
+    case proplists:get_value(json_lib, Opts, undefined) of
+      {{encode, JsonEncode},{decode, JsonDecode}} when is_function(JsonEncode), is_function(JsonDecode) ->
+        application:set_env(epgsql, json_lib, #json_lib{encode = JsonEncode, decode = JsonDecode});
+      _ ->
+        ok
+    end,
     case pgsql_sock:start_link(self(), Host, Username, Opts) of
         {ok, Sock} ->
             put(username, Username),

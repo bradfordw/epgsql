@@ -3,4 +3,4 @@
 
 -record(error,  {severity, code, message, extra}).
 
--record(decoders, {json}).
+-record(json_lib, {encode, decode}).

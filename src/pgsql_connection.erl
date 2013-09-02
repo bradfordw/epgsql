@@ -31,8 +31,7 @@
           callers=[],
           backend,
           statement,
-          txstatus,
-          decoder = #decoders{}}).
+          txstatus}).
 
 -define(int16, 1/big-signed-unit:16).
 -define(int32, 1/big-signed-unit:32).
@@ -123,8 +122,6 @@ code_change(_Old_Vsn, State_Name, State, _Extra) ->
 startup({connect, Host, Username, Password, Opts}, From, State) ->
     Timeout = proplists:get_value(timeout, Opts, 5000),
     Async   = proplists:get_value(async, Opts, undefined),
-    JsonDecoder = proplists:get_value(json_decoder, Opts, undefined),
-    Decoders = #decoders{json = JsonDecoder},
     case pgsql_sock:start_link(self(), Host, Username, Opts) of
         {ok, Sock} ->
             put(username, Username),
@@ -133,8 +130,7 @@ startup({connect, Host, Username, Password, Opts}, From, State) ->
                        sock     = Sock,
                        timeout  = Timeout,
                        reply_to = From,
-                       async    = Async,
-                       decoders = Decoders},
+                       async    = Async},
             {next_state, auth, State2, Timeout};
         Error ->
             {stop, normal, Error, State}
@@ -328,8 +324,8 @@ querying({$T, <<Count:?int16, Bin/binary>>}, State) ->
 
 %% DataRow
 querying({$D, <<_Count:?int16, Bin/binary>>}, State) ->
-    #state{timeout = Timeout, statement = #statement{columns = Columns, decoders = Decoders}} = State,
-    Data = decode_data(Columns, Bin, Decoders),
+    #state{timeout = Timeout, statement = #statement{columns = Columns}} = State,
+    Data = decode_data(Columns, Bin),
     notify(State, {data, Data}),
     {next_state, querying, State, Timeout};
 
@@ -452,8 +448,8 @@ describing({$Z, <<Status:8>>}, State) ->
 
 %% DataRow
 executing({$D, <<_Count:?int16, Bin/binary>>}, State) ->
-    #state{timeout = Timeout, statement = #statement{columns = Columns, decoders = Decoders}} = State,
-    Data = decode_data(Columns, Bin, Decoders),
+    #state{timeout = Timeout, statement = #statement{columns = Columns}} = State,
+    Data = decode_data(Columns, Bin),
     notify(State, {data, Data}),
     {next_state, executing, State, Timeout};
 
@@ -535,21 +531,18 @@ timeout(_Event, State) ->
 
 %% decode data
 decode_data(Columns, Bin) ->
-  decode_data(Columns, Bin, []).
+    decode_data(Columns, Bin, []).
 
-decode_data(Columns, Bin, Decoders) ->
-    decode_data(Columns, Bin, Decoders, []).
-
-decode_data([], _Bin, _Decoders, Acc) ->
+decode_data([], _Bin, Acc) ->
     list_to_tuple(lists:reverse(Acc));
-decode_data([_C | T], <<-1:?int32, Rest/binary>>, Decoders, Acc) ->
-    decode_data(T, Rest, Opts, [null | Acc]);
-decode_data([C | T], <<Len:?int32, Value:Len/binary, Rest/binary>>, Decoders, Acc) ->
+decode_data([_C | T], <<-1:?int32, Rest/binary>>, Acc) ->
+    decode_data(T, Rest, [null | Acc]);
+decode_data([C | T], <<Len:?int32, Value:Len/binary, Rest/binary>>, Acc) ->
     case C of
-        #column{type = Type, format = 1}   -> Value2 = pgsql_binary:decode(Type, Decoders, Value);
+        #column{type = Type, format = 1}   -> Value2 = pgsql_binary:decode(Type, Value);
         #column{}                          -> Value2 = Value
     end,
-    decode_data(T, Rest, Decoders, [Value2 | Acc]).
+    decode_data(T, Rest, [Value2 | Acc]).
 
 %% decode column information
 decode_columns(Count, Bin) ->

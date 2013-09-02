@@ -18,6 +18,7 @@ Erlang PostgreSQL Database Client
     + {json_lib, {
       {encode, fun mochijson2:encode/1},
       {decode, fun mochijson2:decode/1}}} see JSON Support section
+      
   {ok, C} = pgsql:connect("localhost", "username", [{database, "test_db"}]).
   ok = pgsql:close(C).
 

@@ -37,10 +37,11 @@ encode(chararray, L) when is_list(L)        -> encode_array(bpchar, L);
 encode(textarray, L) when is_list(L)        -> encode_array(text, L);
 encode(uuidarray, L) when is_list(L)        -> encode_array(uuid, L);
 encode(varchararray, L) when is_list(L)     -> encode_array(varchar, L);
-encode(json, Json) ->
+encode(json, L) ->
   {ok, JsonLib} = application:get_env(epgsql, json_lib),
   EFun = JsonLib#json_lib.encode,
-  encode_array(text, binary_to_list(list_to_binary(EFun(Json))));
+  Json = list_to_binary(EFun(L)),
+  <<(byte_size(Json)):?int32, Json/binary>>;
 encode(Type, L) when is_list(L)             -> encode(Type, list_to_binary(L));
 encode(_Type, _Value)                       -> {error, unsupported}.
 

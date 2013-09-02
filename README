@@ -15,7 +15,9 @@ Erlang PostgreSQL Database Client
     + {ssl_opts, List}       see ssl application docs in OTP
     + {timeout,  Integer}    milliseconds, defaults to 5000
     + {async,    Pid}        see Asynchronous Messages section
-    + {json_lib, {{encode, fun mochijson2:encode/1},{decode, fun mochijson2:decode/1}}} see JSON Support
+    + {json_lib, {
+      {encode, fun mochijson2:encode/1},
+      {decode, fun mochijson2:decode/1}}} see JSON Support section
   {ok, C} = pgsql:connect("localhost", "username", [{database, "test_db"}]).
   ok = pgsql:close(C).
 

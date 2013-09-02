@@ -2,7 +2,7 @@
 
 -module(pgsql_binary).
 
--export([encode/2, decode/2, supports/1]).
+-export([encode/2, decode/2, decode/3, supports/1]).
 
 -define(int32, 1/big-signed-unit:32).
 -define(datetime, (get(datetime_mod))).
@@ -67,6 +67,11 @@ decode(textarray, B)                        -> decode_array(B);
 decode(uuidarray, B)                        -> decode_array(B);
 decode(varchararray, B)                     -> decode_array(B);
 decode(_Other, Bin)                         -> Bin.
+
+decode(json, Json, #decoders{json = JsonDecoder} = Decoders) when is_function(JsonDecoder) ->
+  JsonDecoder(Json);
+decode(Type, Data, _) ->
+  decode(Type, Data).
 
 encode_array(Type, A) ->
     {Data, {NDims, Lengths}} = encode_array(Type, A, 0, []),
